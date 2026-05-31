@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\UserController;
@@ -55,7 +56,7 @@ Route::middleware('auth')->group(function () {
     
     // Dashboards según rol
     Route::get('/dashboard', function () {
-        $user = auth()->user();
+        $user = Auth::user();
         return match ($user->rol_id) {
             1 => redirect()->route('dashboard.student'), // Estudiante
             2 => redirect()->route('dashboard.company'), // Empresa
@@ -84,7 +85,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/ofertas/{offer}', [AdminDashboardController::class, 'destroyOffer'])->name('dashboard.admin.offers.destroy');
 
         Route::get('/reportes/{report}', [AdminDashboardController::class, 'downloadReport'])
-            ->whereIn('report', ['users', 'offers', 'applications', 'audits'])
+            ->whereIn('report', ['users', 'offers', 'applications', 'audits', 'changes'])
             ->name('dashboard.admin.reports.download');
     });
 

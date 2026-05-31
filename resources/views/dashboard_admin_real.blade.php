@@ -469,6 +469,13 @@
                             </div>
                             <i data-lucide="download" class="w-6 h-6 text-amber-600"></i>
                         </a>
+                        <a href="{{ route('dashboard.admin.reports.download', ['report' => 'changes']) }}" class="bg-white rounded-[1.75rem] p-6 card-neo flex items-center justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-black">Cambios detallados</h3>
+                                <p class="text-sm text-slate-500 mt-1">Cada campo modificado con antes, después y fecha exacta.</p>
+                            </div>
+                            <i data-lucide="file-spreadsheet" class="w-6 h-6 text-rose-600"></i>
+                        </a>
                     </div>
                 </section>
 

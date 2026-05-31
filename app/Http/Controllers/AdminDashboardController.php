@@ -244,7 +244,7 @@ class AdminDashboardController extends Controller
     public function downloadReport(string $report): StreamedResponse
     {
         $filename = 'reporte_' . $report . '_' . now()->format('Ymd_His') . '.csv';
-        $this->logAudit('reportes', null, 'Descargó reporte ' . $report);
+        $this->logAudit('reportes', 0, 'Descargó reporte ' . $report);
 
         return response()->streamDownload(function () use ($report) {
             $output = fopen('php://output', 'w');
@@ -324,14 +324,52 @@ class AdminDashboardController extends Controller
                         });
                     break;
 
+                case 'changes':
+                    $headers = ['Auditoría ID', 'Fecha', 'Usuario', 'Entidad', 'Entidad ID', 'Acción', 'Campo', 'Antes', 'Después'];
+                    $rows = RegistroAuditoria::with(['usuario', 'tipoEntidad'])
+                        ->orderByDesc('creado_en')
+                        ->get()
+                        ->flatMap(function (RegistroAuditoria $audit) {
+                            $details = collect($audit->detalles ?? []);
+
+                            if ($details->isEmpty()) {
+                                return [[
+                                    $audit->id,
+                                    optional($audit->creado_en)?->format('Y-m-d H:i:s'),
+                                    $audit->usuario?->nombre_completo ?? 'Sistema',
+                                    $audit->tipoEntidad?->nombre ?? 'Sin entidad',
+                                    $audit->entidad_id ?? 'N/D',
+                                    $audit->accion,
+                                    'Sin detalle',
+                                    'N/D',
+                                    'N/D',
+                                ]];
+                            }
+
+                            return $details->map(function (array $detail) use ($audit) {
+                                return [
+                                    $audit->id,
+                                    optional($audit->creado_en)?->format('Y-m-d H:i:s'),
+                                    $audit->usuario?->nombre_completo ?? 'Sistema',
+                                    $audit->tipoEntidad?->nombre ?? 'Sin entidad',
+                                    $audit->entidad_id ?? 'N/D',
+                                    $audit->accion,
+                                    $detail['field'] ?? 'Campo',
+                                    $detail['before'] ?? 'N/D',
+                                    $detail['after'] ?? 'N/D',
+                                ];
+                            });
+                        });
+                    break;
+
                 default:
                     abort(404);
             }
 
-            fputcsv($output, $headers);
+            fputcsv($output, $headers, ',', '"', '');
 
             foreach ($rows as $row) {
-                fputcsv($output, $row);
+                fputcsv($output, $row, ',', '"', '');
             }
 
             fclose($output);
@@ -578,12 +616,16 @@ class AdminDashboardController extends Controller
 
     private function offerAuditSnapshot(OfertaPasantia $offer, array $validated = []): array
     {
+        $perfilEmpresaId = $validated['perfil_empresa_id'] ?? $offer->perfil_empresa_id;
+        $ubicacionId = $validated['ubicacion_id'] ?? $offer->ubicacion_id;
+        $estadoPublicacionId = $validated['estado_publicacion_id'] ?? $offer->estado_publicacion_id;
+
         return [
             'titulo' => $validated['titulo'] ?? $offer->titulo,
             'descripcion' => $validated['descripcion'] ?? $offer->descripcion,
-            'perfil_empresa_id' => $validated['perfil_empresa_id'] ?? $offer->perfil_empresa_id,
-            'ubicacion_id' => $validated['ubicacion_id'] ?? $offer->ubicacion_id,
-            'estado_publicacion_id' => $validated['estado_publicacion_id'] ?? $offer->estado_publicacion_id,
+            'perfil_empresa_id' => $this->offerCompanyLabel($perfilEmpresaId),
+            'ubicacion_id' => $this->offerLocationLabel($ubicacionId),
+            'estado_publicacion_id' => $this->offerStatusLabel($estadoPublicacionId),
             'fecha_inicio' => $validated['fecha_inicio'] ?? optional($offer->fecha_inicio)->format('Y-m-d'),
             'fecha_fin' => $validated['fecha_fin'] ?? optional($offer->fecha_fin)->format('Y-m-d'),
         ];
@@ -621,6 +663,42 @@ class AdminDashboardController extends Controller
             'fecha_fin' => 'Fecha fin',
             'estado_registro' => 'Estado registro',
         ];
+    }
+
+    private function offerCompanyLabel(?int $perfilEmpresaId): string
+    {
+        if (!$perfilEmpresaId) {
+            return 'N/D';
+        }
+
+        $company = PerfilEmpresa::with('usuario')->find($perfilEmpresaId);
+
+        if (!$company) {
+            return 'Empresa #' . $perfilEmpresaId;
+        }
+
+        $companyLabel = $company->nombre_empresa ?: 'Empresa #' . $company->id;
+        $ownerLabel = $company->usuario?->nombre_completo;
+
+        return $ownerLabel ? $companyLabel . ' · ' . $ownerLabel : $companyLabel;
+    }
+
+    private function offerLocationLabel(?int $ubicacionId): string
+    {
+        if (!$ubicacionId) {
+            return 'N/D';
+        }
+
+        return $this->formatLocation(Ubicacion::find($ubicacionId)) ?: ('Ubicación #' . $ubicacionId);
+    }
+
+    private function offerStatusLabel(?int $estadoPublicacionId): string
+    {
+        if (!$estadoPublicacionId) {
+            return 'N/D';
+        }
+
+        return EstadoPublicacion::find($estadoPublicacionId)?->nombre ?? ('Estado #' . $estadoPublicacionId);
     }
 
     private function buildAuditChanges(array $before, array $after, array $labels): array
