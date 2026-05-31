@@ -167,104 +167,51 @@
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900">Panel de Resultados</h2>
-                            <p class="text-sm text-slate-500" id="results-counter">Aplica un filtro para iniciar la simulación</p>
+                            <p class="text-sm text-slate-500" id="results-counter">{{ $offers->count() }} pasantías encontradas</p>
                         </div>
                     </div>
 
-                    <div id="empty-state" class="bg-white border border-slate-100 rounded-[2rem] p-12 text-center shadow-sm">
+                    <div id="empty-state" class="bg-white border border-slate-100 rounded-[2rem] p-12 text-center shadow-sm {{ $offers->isNotEmpty() ? 'hidden' : '' }}">
                         <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <i data-lucide="database-zap" class="w-8 h-8"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-slate-800 mb-1">Sin conexión transaccional</h3>
-                        <p class="text-sm text-slate-500 max-w-md mx-auto">No se encontraron ofertas cargadas en este país. Interactúa con la barra de filtros de la izquierda para simular el comportamiento del sistema.</p>
+                        <h3 class="text-lg font-bold text-slate-800 mb-1">No hay ofertas activas por ahora</h3>
+                        <p class="text-sm text-slate-500 max-w-md mx-auto">Cuando las empresas publiquen nuevas oportunidades, aparecerán aquí automáticamente.</p>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 hidden" id="postings-grid">
-                        
-                        <div class="job-card card-neo bg-white p-7 rounded-[2rem] flex flex-col justify-between" 
-                             data-title="Pasante de Inteligencia Artificial" data-company="DataFlow Solutions" data-dept="Santa Cruz" data-area="Ingeniería" data-modality="Presencial">
-                            <div>
-                                <div class="flex justify-between items-start mb-6">
-                                    <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
-                                        <i data-lucide="database" class="w-8 h-8 text-indigo-600"></i>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 {{ $offers->isEmpty() ? 'hidden' : '' }}" id="postings-grid">
+                        @foreach($offers as $offer)
+                            @php
+                                $department = $offer->ubicacion?->ciudad ?? 'Sin ubicación';
+                                $companyName = $offer->perfilEmpresa?->nombre_empresa ?? 'Empresa';
+                                $area = $offer->perfilEmpresa?->industria ?? 'Ingeniería';
+                                $modality = str_contains(strtolower($offer->titulo . ' ' . $offer->descripcion), 'remoto') ? 'Remoto' : 'Presencial';
+                            @endphp
+                            <div class="job-card card-neo bg-white p-7 rounded-[2rem] flex flex-col justify-between"
+                                data-title="{{ $offer->titulo }}"
+                                data-company="{{ $companyName }}"
+                                data-dept="{{ $department }}"
+                                data-area="{{ $area }}"
+                                data-modality="{{ $modality }}">
+                                <div>
+                                    <div class="flex justify-between items-start mb-6">
+                                        <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
+                                            <i data-lucide="briefcase-business" class="w-8 h-8 text-indigo-600"></i>
+                                        </div>
+                                        <span class="px-3 py-1 bg-blue-50 text-blue-700 font-extrabold rounded-full text-xs">{{ $offer->postulaciones_count }} postulaciones</span>
                                     </div>
-                                    <span class="px-3 py-1 bg-blue-50 text-blue-700 font-extrabold rounded-full text-xs">96% Match</span>
-                                </div>
-                                <div class="space-y-2 mb-6">
-                                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight card-title">Pasante de Inteligencia Artificial</h3>
-                                    <p class="text-sm font-bold text-blue-600">DataFlow Solutions • <span class="card-dept">Santa Cruz</span></p>
-                                    <span class="inline-block mt-1 px-2.5 py-0.5 bg-purple-50 text-purple-700 rounded-md text-xs font-bold">Presencial</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between pt-6 border-t border-slate-50">
-                                <span class="text-xs font-semibold text-slate-400">Hace 2 horas</span>
-                                <button class="px-6 py-3 bg-[#0d121f] text-white rounded-xl text-sm font-bold">Ver detalles</button>
-                            </div>
-                        </div>
-
-                        <div class="job-card card-neo bg-white p-7 rounded-[2rem] flex flex-col justify-between" 
-                             data-title="Desarrollador Fullstack Junior" data-company="SoftBol" data-dept="La Paz" data-area="Ingeniería" data-modality="Remoto">
-                            <div>
-                                <div class="flex justify-between items-start mb-6">
-                                    <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
-                                        <i data-lucide="globe" class="w-8 h-8 text-blue-500"></i>
+                                    <div class="space-y-2 mb-6">
+                                        <h3 class="text-xl font-extrabold text-slate-900 tracking-tight card-title">{{ $offer->titulo }}</h3>
+                                        <p class="text-sm font-bold text-blue-600">{{ $companyName }} • <span class="card-dept">{{ $department }}</span></p>
+                                        <span class="inline-block mt-1 px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-md text-xs font-bold">{{ $offer->estadoPublicacion?->nombre ?? 'Activa' }}</span>
                                     </div>
-                                    <span class="px-3 py-1 bg-blue-50 text-blue-700 font-extrabold rounded-full text-xs">88% Match</span>
                                 </div>
-                                <div class="space-y-2 mb-6">
-                                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight card-title">Desarrollador Fullstack Junior</h3>
-                                    <p class="text-sm font-bold text-blue-600">SoftBol • <span class="card-dept">La Paz</span></p>
-                                    <span class="inline-block mt-1 px-2.5 py-0.5 bg-green-50 text-green-700 rounded-md text-xs font-bold">Virtual / Remoto</span>
+                                <div class="flex items-center justify-between pt-6 border-t border-slate-50">
+                                    <span class="text-xs font-semibold text-slate-400">{{ $offer->fecha_inicio ? optional($offer->fecha_inicio)->format('Y-m-d') : 'Fecha abierta' }}</span>
+                                    <button class="px-6 py-3 bg-[#0d121f] text-white rounded-xl text-sm font-bold">Ver detalles</button>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between pt-6 border-t border-slate-50">
-                                <span class="text-xs font-semibold text-slate-400">Ayer</span>
-                                <button class="px-6 py-3 bg-[#0d121f] text-white rounded-xl text-sm font-bold">Ver detalles</button>
-                            </div>
-                        </div>
-
-                        <div class="job-card card-neo bg-white p-7 rounded-[2rem] flex flex-col justify-between" 
-                             data-title="Diseñador UI/UX de Plataformas" data-company="CreativosBo" data-dept="Cochabamba" data-area="Diseño" data-modality="Remoto">
-                            <div>
-                                <div class="flex justify-between items-start mb-6">
-                                    <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
-                                        <i data-lucide="palette" class="w-8 h-8 text-pink-500"></i>
-                                    </div>
-                                    <span class="px-3 py-1 bg-blue-50 text-blue-700 font-extrabold rounded-full text-xs">82% Match</span>
-                                </div>
-                                <div class="space-y-2 mb-6">
-                                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight card-title">Diseñador UI/UX de Plataformas</h3>
-                                    <p class="text-sm font-bold text-blue-600">CreativosBo • <span class="card-dept">Cochabamba</span></p>
-                                    <span class="inline-block mt-1 px-2.5 py-0.5 bg-green-50 text-green-700 rounded-md text-xs font-bold">Virtual / Remoto</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between pt-6 border-t border-slate-50">
-                                <span class="text-xs font-semibold text-slate-400">Hace 3 días</span>
-                                <button class="px-6 py-3 bg-[#0d121f] text-white rounded-xl text-sm font-bold">Ver detalles</button>
-                            </div>
-                        </div>
-
-                        <div class="job-card card-neo bg-white p-7 rounded-[2rem] flex flex-col justify-between" 
-                             data-title="Asistente de Auditoría Financiera" data-company="Consultores Asociados" data-dept="Tarija" data-area="Negocios" data-modality="Presencial">
-                            <div>
-                                <div class="flex justify-between items-start mb-6">
-                                    <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100">
-                                        <i data-lucide="trending-up" class="w-8 h-8 text-emerald-500"></i>
-                                    </div>
-                                    <span class="px-3 py-1 bg-blue-50 text-blue-700 font-extrabold rounded-full text-xs">79% Match</span>
-                                </div>
-                                <div class="space-y-2 mb-6">
-                                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight card-title">Asistente de Auditoría Financiera</h3>
-                                    <p class="text-sm font-bold text-blue-600">Consultores Asociados • <span class="card-dept">Tarija</span></p>
-                                    <span class="inline-block mt-1 px-2.5 py-0.5 bg-purple-50 text-purple-700 rounded-md text-xs font-bold">Presencial</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between pt-6 border-t border-slate-50">
-                                <span class="text-xs font-semibold text-slate-400">Hace 1 semana</span>
-                                <button class="px-6 py-3 bg-[#0d121f] text-white rounded-xl text-sm font-bold">Ver detalles</button>
-                            </div>
-                        </div>
-
+                        @endforeach
                     </div>
                 </div>
 
@@ -315,7 +262,7 @@
             departamento: 'Todos',
             areas: [], 
             modalidades: [],
-            hasInteracted: false // Bandera para saber si ya tocó algún filtro
+            hasInteracted: true
         };
 
         // Nodos del DOM
@@ -345,14 +292,6 @@
 
         // Motor de renderizado de tarjetas filtradas
         function filtrarOfertas() {
-            // Si el usuario no ha interactuado con ningún filtro, mantenemos el Empty State
-            if (!state.hasInteracted) {
-                emptyState.classList.remove('hidden');
-                postingsGrid.classList.add('hidden');
-                resultsCounter.textContent = "Aplica un filtro para iniciar la simulación";
-                return;
-            }
-
             let visibles = 0;
 
             jobCards.forEach(card => {
@@ -366,8 +305,7 @@
                 const matchSearch = title.includes(state.search) || company.includes(state.search);
                 const matchDept = state.departamento === 'Todos' || state.departamento === dept;
                 const matchArea = state.areas.length === 0 || state.areas.includes(area);
-                // Si no hay modalidades seleccionadas, no muestra ninguna
-                const matchModality = state.modalidades.length > 0 && state.modalidades.includes(modality);
+                const matchModality = state.modalidades.length === 0 || state.modalidades.includes(modality);
 
                 if(matchSearch && matchDept && matchArea && matchModality) {
                     card.classList.remove('hidden');
@@ -381,7 +319,7 @@
             if (visibles > 0) {
                 emptyState.classList.add('hidden');
                 postingsGrid.classList.remove('hidden');
-                resultsCounter.textContent = visibles === 1 ? '1 pasantía simulada encontrada' : `${visibles} pasantías simuladas encontradas`;
+                resultsCounter.textContent = visibles === 1 ? '1 pasantía encontrada' : `${visibles} pasantías encontradas`;
             } else {
                 emptyState.classList.remove('hidden');
                 postingsGrid.classList.add('hidden');
@@ -389,21 +327,14 @@
             }
         }
 
-        // Activador de interacción inicial
-        function registrarInteraccion() {
-            state.hasInteracted = true;
-        }
-
         // Eventos de entrada: Texto
         searchInput.addEventListener('input', (e) => {
-            registrarInteraccion();
             state.search = e.target.value.toLowerCase();
             filtrarOfertas();
         });
 
         // Eventos de entrada: Menú Select de Departamentos
         selectDept.addEventListener('change', (e) => {
-            registrarInteraccion();
             state.departamento = e.target.value;
             filtrarOfertas();
         });
@@ -411,7 +342,6 @@
         // Eventos de entrada: Botones de áreas de estudio
         areaButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                registrarInteraccion();
                 const areaValue = btn.getAttribute('data-area');
                 const iconCheck = btn.querySelector('[data-lucide="check"]');
 
@@ -433,7 +363,6 @@
         // Eventos de entrada: Checkboxes de modalidad
         checkboxesModality.forEach(cb => {
             cb.addEventListener('change', () => {
-                registrarInteraccion();
                 const val = cb.value;
                 if(cb.checked) {
                     if(!state.modalidades.includes(val)) state.modalidades.push(val);
@@ -451,7 +380,6 @@
             state.departamento = 'Todos';
             state.areas = [];
             state.modalidades = [];
-            state.hasInteracted = false;
 
             searchInput.value = '';
             selectDept.value = 'Todos';
@@ -466,6 +394,8 @@
             updateCheckboxUI();
             filtrarOfertas();
         });
+
+        filtrarOfertas();
     </script>
 </body>
 </html>

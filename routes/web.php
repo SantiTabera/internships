@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\CompanyDashboardController;
+use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\StudentProfileController;
 use App\Http\Controllers\CompanyProfileController;
@@ -15,7 +17,7 @@ Route::get('/', function () {
 });
 
 Route::view('/index', 'index')->name('index');
-Route::view('/explora', 'explora')->name('explora');
+Route::get('/explora', [ExploreController::class, 'index'])->name('explora');
 Route::view('/comofunciona', 'comofunciona')->name('comofunciona');
 Route::view('/sobrenosotros', 'sobrenosotros')->name('sobrenosotros');
 Route::view('/contacto', 'contacto')->name('contacto');
@@ -36,7 +38,7 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Alias legacy .html routes used by navbar/footer links.
-Route::view('/explorar', 'explora');
+Route::redirect('/explorar', '/explora', 301);
 Route::view('/comufunciona', 'comofunciona');
 
 // Redirect legacy .html URLs to the new routes (preserve SEO / bookmarks)
@@ -70,9 +72,13 @@ Route::middleware('auth')->group(function () {
         return view('dashboard_student');
     })->name('dashboard.student')->middleware('role:1');
 
-    Route::get('/dashboard/empresa', function () {
-        return view('dashboard_company');
-    })->name('dashboard.company')->middleware('role:2');
+    Route::middleware('role:2')->prefix('/dashboard/empresa')->group(function () {
+        Route::get('/', [CompanyDashboardController::class, 'index'])->name('dashboard.company');
+        Route::post('/ofertas', [CompanyDashboardController::class, 'storeOffer'])->name('dashboard.company.offers.store');
+        Route::put('/ofertas/{offer}', [CompanyDashboardController::class, 'updateOffer'])->name('dashboard.company.offers.update');
+        Route::delete('/ofertas/{offer}', [CompanyDashboardController::class, 'destroyOffer'])->name('dashboard.company.offers.destroy');
+        Route::put('/perfil', [CompanyDashboardController::class, 'updateProfile'])->name('dashboard.company.profile.update');
+    });
 
     Route::middleware('role:3')->prefix('/dashboard/admin')->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard.admin');
